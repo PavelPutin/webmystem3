@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Web mystem3</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-KK94CHFLLe+nY2dmCWGMq91rCGa5gtU4mk92HdvYe+M/SXH301p5ILy+dN9+nJOZ" crossorigin="anonymous">
+    <style>
+        .sticky-form {
+            position: sticky;
+            top: 10px;
+        }
+    </style>
+</head>
+<body class="container">
+    <header>
+        <h1 class="text-center bg-primary-subtle p-4">WebMystem3</h1>
+    </header>
+    <main class="row">
+        <div class="col">
+            <form class="sticky-form" method="post" enctype=multipart/form-data>
+                <fieldset class="mb-4">
+                    <legend>Ввод данных</legend>
+                    <div>
+                        <label class="form-label" for="input_text">Текст для разбора:</label>
+                        <textarea
+                                class="form-control"
+                                id="input_text"
+                                name="input_text"
+                                wrap="soft"
+                                rows="15">{{ text if text != "" }}</textarea>
+                    </div>
+
+                    <div>
+                        <label class="form-label" for="input_file">Загрузка файла с текстом для разбора:</label>
+                        <input class="form-control" id="input_file" type="file" name="input_file" accept=".txt">
+                    </div>
+                </fieldset>
+
+                <fieldset class="mb-4">
+                    <legend>Параметры вывода</legend>
+                    <div class="form-check">
+                        <input class="form-check-input" id="grammar_info" name="grammar_info" type="checkbox" {{ "checked" if grammar_info }}>
+                        <label class="form-check-label" for="grammar_info">Отображать грамматичекую информацию</label>
+                    </div>
+
+                    <div class="form-check">
+                        <input class="form-check-input" id="disambiguation" name="disambiguation" type="checkbox" {{ "checked" if disambiguation }}>
+                        <label class="form-check-label" for="disambiguation">Применить устранение неоднозначности</label>
+                    </div>
+
+                    <div class="form-check">
+                        <input class="form-check-input" id="entire_input" name="entire_input" type="checkbox" {{ "checked" if entire_input }}>
+                        <label class="form-check-label" for="entire_input">Отображать весь ввод (учётом пробелов)</label>
+                    </div>
+
+                    <div class="form-check">
+                        <input class="form-check-input" id="weight" name="weight" type="checkbox" {{ "checked" if weight }}>
+                        <label class="form-check-label" for="weight">Отображать контекстно-независимый вес леммы</label>
+                    </div>
+                </fieldset>
+
+                <div class="d-grid">
+                    <input class="btn btn-primary mt-3" type="submit" name="analyze" value="Разобрать">
+                </div>
+            </form>
+        </div>
+
+        {% macro word_analyze(word, sequence_number) -%}
+            <li class="accordion-item">
+                <h3 class="accordion-header">
+                    <button
+                            class="accordion-button {{ 'collapsed' if sequence_number != 0 }}" type="button"
+                            data-bs-toggle="collapse" data-bs-target="#collapse{{ sequence_number }}"
+                            aria-expanded="{{ 'true' if sequence_number == 0 else 'false' }}" aria-controls="collapse{{ sequence_number }}"
+                            {{ 'disabled' if "analysis" not in word }}>
+                        {{ word["text"] }}
+                    </button>
+                </h3>
+                {% if "analysis" in word %}
+                    <div
+                        id="collapse{{ sequence_number }}"
+                        class="accordion-collapse collapse {{ 'show' if sequence_number == 0 }}">
+                        <div class="accordion-body">
+                            {% for analysis_block in word["analysis"] %}
+                            <div class="card">
+                                <div class="card-body">
+
+                                    <div><span class="fw-bold">Лексема:</span> {{ analysis_block["lex"] }}</div>
+
+                                    {% if "qual" in analysis_block %}
+                                        <div>
+                                            <span class="fw-bold">{{ analysis_block["qual"][0].upper() + analysis_block["qual"][1:] }}</span>
+                                        </div>
+                                    {% endif %}
+
+                                    {% if "wt" in analysis_block %}
+                                        <div><span class="fw-bold">Вес леммы:</span> {{ analysis_block["wt"] }}</div>
+                                    {% endif %}
+
+                                    {% if "gr" in analysis_block %}
+                                        {% for grammem_name, value in analysis_block["gr"].items() %}
+                                            {% if grammem_name != "forms" %}
+                                                <div><span class="fw-bold">{{ grammem_name }}:</span> {{ value }}</div>
+                                            {% else %}
+                                                {% for form_block in value %}
+                                                    <hr width="100px">
+                                                    <div>
+                                                        {% for form_name, form_value in form_block.items() %}
+                                                            <div><span class="fw-bold">{{ form_name }}:</span> {{ form_value }}</div>
+                                                        {% endfor %}
+                                                    </div>
+                                                {% endfor %}
+                                            {% endif %}
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+            </li>
+        {%- endmacro %}
+
+
+        <div class="col">
+            <ul class="list-unstyled accordion" id="accordionWords">
+                {% for num, word in analyzed_text.items() %}
+                    {{ word_analyze(word, num) }}
+                {% endfor %}
+            </ul>
+        </div>
+    </main>
+    <footer class=" container bg-primary-subtle p-4 navbar fixed-bottom">
+        Создано Павлом Путиным, 5 группа
+    </footer>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ENjdO4Dr2bkBIFxQpeoTz1HIcje39Wm4jDKdf19U8gI4ddQ3GYNS7NTKfAdVQSZe" crossorigin="anonymous"></script>
+</body>
+</html>
